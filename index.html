@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang=ja>
+<head>
+<style>
+body {
+	font-family: "meiryo ui";
+	font-size:24px;
+	font-weight:bold;
+	padding-left: 20px;
+	padding-right: 20px;
+}
+h2 > span {
+	background: rgba(0,0,0,0.2);
+	border: 1px solid rgba(0,0,0,0.2);
+	border-radius: 10px 10px;
+	padding: 10px 20px;
+}
+
+td {
+	padding: 0px 10px;
+	border-left: 20px solid transparent;
+	position: relative;
+}
+td.s {
+	font-size: 16px;
+}
+thead td {
+	border-bottom: 1px solid gray;
+}
+#thiefs {
+	height: 110px;
+	vertical-align:top;
+	margin-bottom: 20px;
+}
+.t {
+	display: inline-block;
+	width: 90px;
+	height: 100px;
+	margin-top: 10px;
+	overflow: hidden;
+	margin-left:10px;
+	border-right:2px solid white;
+	border-bottom:2px solid white;
+}
+.t > div,
+.t > div > div {
+	display: inline-block;
+	width: 70px;
+	height: 90px;
+	position: relative;
+}
+img.p1 {
+	margin-top: 10px;
+	width: 64px;
+	height: auto;
+}
+img.p2 {
+	position: absolute;
+	right: 0;
+	top: 60px;
+	z-index: 2;
+}
+.b {
+	display: inline-block;
+	width: 5px;
+	height: 16px;
+	margin-right: 2px;
+	background-color: blue;
+}
+img.p3 {
+	display: none;
+	position: absolute;
+	z-index: 1;
+	top:0px;
+	left:0;
+	margin-top: 10px;
+	width: 64px;
+	height: auto;
+}
+.c {
+	margin-top: 20px;
+	font-size: 16px;
+}
+</style>
+<script>
+var c = 0;
+var ws;
+var ts=[];
+var th=[];
+window.onload = function() {
+	let host = window.location.hostname;
+	let port = window.location.port;
+	if(host != null && host != "") {
+		if(port == null
+		|| port == "") port = "80";
+		ws = new WebSocket('ws://' + host + ':' + port);
+		ws.onmessage = recive;
+		ws.onopen = function() {
+			setTimeout(function() { ws.send("now"); }, 500);
+		};
+	}
+	
+/* * /
+	setTimeout(function() { result(["r", "a:12:5", "b:17:5", "c:1:1"]); }, 1);
+	for(let i=1; i<=5; i++) {
+		let a = parseInt(Math.random() * 4);
+		setTimeout(function() { thief(["t", i + ":0"]); }, 1);
+		setTimeout(function() { demo(i); }, (6 + a) * 1000);
+	}
+/* */
+	setInterval(clock, 1000);
+}
+function clock() {
+	c++;
+	let m = "0" + parseInt(c / 60);
+	let s = "0" + (c % 60);
+	if(m.length > 2) m = m.substr(m.length - 2);
+	if(s.length > 2) s = s.substr(s.length - 2);
+	document.getElementById("c").innerHTML = m + ":" + s;
+}
+function demo(i) {
+	let a = parseInt(Math.random() * 4);
+	if(a % 3 == 0) {
+		setTimeout(function() { thief(["t", i + ":1"]); }, 1);
+		setTimeout(function() { thief(["t", i + ":0"]); }, 2 * 1000);
+	} else if(a % 3 == 1) {
+		setTimeout(function() { thief(["t", i + ":2"]); }, 1);
+		setTimeout(function() { thief(["t", i + ":0"]); }, 2 * 1000);
+	}
+	setTimeout(function() { demo(i); }, (8 + a) * 1000);
+}
+function recive(event) {
+	let h = '';
+	let d = event.data.trim().split(' ');
+	d[0] = d[0].trim();
+	if(d[0] == "r") result(d);
+	else if(d[0] == "t") thief(d);
+	else if(d[0] == "c") { c = 0; }
+}
+function thief(d) {
+	for(let i=1; i<d.length; i++) {
+		d[i] = d[i].trim();
+		if(d[i] == "") continue;
+		let v = d[i].split(':');
+		let ix = ts.indexOf(v[0]);
+		if(ix < 0) {
+			ix = ts.length;
+			ts[ix] = v[0];
+			th[ix] = null;
+			let t = '<div class=t><div id=t' + ix + ' style="opacity:0;">'
+					+ '<img class=p1 src=images/thief.png id=c' + ix + '>'
+					+ '<img class=p2 src=images/microbit2.png>'
+					+ '<img class=p3 src=images/pick.png id=x' + ix + '>'
+					+ '</div></div>';
+			document.getElementById("thiefs").innerHTML += t;
+		}
+		if(v[1] == "0") setTimeout(function() { anime_show(ix, 0, 20); },1);
+		else if(v[1] == "1") setTimeout(function() { anime_leave(ix, -10, 10); },1);
+		else if(v[1] == "2") setTimeout(function() { anime_erase(ix, -12, 10); },1);
+		else if(v[1] == "-1") setTimeout(function() { anime_show(ix, 0, 1); },1);
+	}
+}
+function anime_leave(i, p, c) {
+	if(th[i] != null) {
+		clearTimeout(th[i])
+		th[i] = null;
+	}	
+	p+=10;
+	c--;
+	let e = document.getElementById("t" + i);
+	if(c < 0) {
+		e.style.opacity = 0;
+		e.style.marginTop = "0px";
+		e.style.marginLeft = "0px";
+		e.parentElement.style.borderRightColor = "white";
+		return;
+	}
+	e.parentElement.style.borderRightColor = "gray";
+	e.style.marginLeft = p + "px";
+	th[i] = setTimeout(function() { anime_leave(i, p, c); }, 100);
+}
+function anime_erase(i, p, c) {
+	if(th[i] != null) {
+		clearTimeout(th[i])
+		th[i] = null;
+	}	
+	p+=12;
+	c--;
+	let e = document.getElementById("x" + i);
+	e.style.display = "inline";
+	e = document.getElementById("c" + i);
+	e.style.display = "none";
+	e = document.getElementById("t" + i);
+	if(c < 0) {
+		e.style.opacity = 0;
+		e.style.marginTop = "0px";
+		e.style.marginLeft = "0px";
+		e.parentElement.style.borderBottomColor = "white";
+		e = document.getElementById("c" + i);
+		e.style.display = "inline";
+		e = document.getElementById("x" + i);
+		e.style.display = "none";
+		return;
+	}
+	e.parentElement.style.borderBottomColor = "gray";
+	e.style.marginTop = p + "px";
+	th[i] = setTimeout(function() { anime_erase(i, p, c); }, 100);
+}
+function anime_show(i, o, c) {
+	if(th[i] != null) {
+		clearTimeout(th[i])
+		th[i] = null;
+	}	
+	c--;
+	let e = document.getElementById("t" + i);
+	if(c == 0) {
+		e.style.opacity = 1;
+		e.style.marginTop = "0px";
+		e.style.marginLeft = "0px";
+		e.parentElement.style.borderRightColor = "white";
+		e.parentElement.style.borderBottomColor = "white";
+		e = document.getElementById("c" + i);
+		e.style.display = "inline";
+		e = document.getElementById("x" + i);
+		e.style.display = "none";
+		return;
+	}
+	o += 0.2;
+	e.style.opacity = o;
+	if(o >= 1) {
+		o = 1;
+		e.style.opacity = 1;
+		th[i] = setTimeout(function() { anime_hide(i, o, c); }, 100);
+	} else {
+		th[i] = setTimeout(function() { anime_show(i, o, c); }, 100);
+	}
+}
+function anime_hide(i, o, c) {
+	if(th[i] != null) {
+		clearTimeout(th[i])
+		th[i] = null;
+	}	
+	c--;
+	let e = document.getElementById("t" + i);
+	if(c == 0) {
+		e.style.opacity = 1;
+		return;
+	}
+	o -= 0.2;
+	e.style.opacity = o;
+	if(o <= 0) {
+		o = 0;
+		e.style.opacity = 0;
+		th[i] = setTimeout(function() { anime_show(i, o, c); }, 100);
+	} else {
+		th[i] = setTimeout(function() { anime_hide(i, o,  c); }, 100);
+	}
+}
+function result(d) {
+	let h = "";
+	let mv = 0;
+	let mi = [];
+	for(let i=1; i<d.length; i++) {
+		d[i] = d[i].trim();
+		if(d[i] == "") continue;
+		let v = d[i].split(':');
+		let s = "";
+		let n1 = parseInt(v[1]);
+		let n2 = parseInt(v[2]);
+		let n = n1 - n2;
+		if(n < 0) n = 0;
+		if(mv < n) { mv = n; mi = [i]; }
+		else if(mv == n) { mi.push(i); }
+		if(n > 0) {
+			let m = parseInt(n / 10) + 1;
+			while(m > 0) { s += "<span class=b></span>"; m--; }
+		}
+		h += '<tr><td nowrap id=r' + i + ' style="border:0;"></td>'
+		  + '<td nowrap style="border:0;">' + v[0] + '</td>'
+		  + '<td nowrap align=right>' + n1 + '</td>'
+		  + '<td nowrap align=right>' + n + '</td>'
+		  + '<td nowrap class=s>' + s + '</td></tr>'
+	}
+	document.getElementById("tbody").innerHTML = h;
+	for(let i=0; i<mi.length; i++) {
+		document.getElementById("r" + mi[i]).innerHTML = "★";
+	}
+}
+</script>
+</head>
+<body>
+<h2><span>かくれたドロボウをつかまえよう！</span></h2>
+
+<div id=thiefs>
+<div class=t style="width:140px;position:relative; ">
+<img class=p1 src=images/kouban.png style="width:128px;margin-top:-20px;">
+<img class=p2 src=images/microbit.png>
+</div>
+<div class=t style="width:0px;border-right:1px solid gray;"></div>
+</div>
+<table><thead>
+<tr>
+<td nowrap style="border:0;opacity:0;">★</td>
+<td nowrap>なまえ</td>
+<td nowrap align=right>つかまえた</td>
+<td nowrap align=right>とくてん</td>
+<td nowrap style="min-width:250px;"></td></tr>
+</thead>
+<tbody id=tbody></tbody>
+</table>
+<div class=c><span>経過：</span><span id=c></span></div>
+</body>
+</html>
