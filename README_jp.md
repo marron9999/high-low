@@ -20,4 +20,4 @@ server.jsを修正してください。
 ### index.html
 
 警官、泥棒からの送信データを表示するためのHTMLです。<br>
-server.jsを動作させたあと、ブラウザで「http://localhost」を開いてください。
+server.jsを動作させたあと、ブラウザで「`http://localhost`」を開いてください。
